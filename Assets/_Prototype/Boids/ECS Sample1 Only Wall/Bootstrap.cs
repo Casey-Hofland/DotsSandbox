@@ -45,6 +45,7 @@ namespace Boids.DOTS.Sample1
                 , typeof(LocalToWorld)
                 , typeof(Velocity)
                 , typeof(Acceleration)
+                , typeof(Boids.DOTS.Sample5.NeighborsEntityBuffer)
                 , typeof(RenderMesh)
             );
             var random = new Unity.Mathematics.Random((uint)Guid.NewGuid().GetHashCode() + 1);
@@ -52,9 +53,11 @@ namespace Boids.DOTS.Sample1
             // Create boid entities from scratch
             for(int i = 0; i < boidCount; ++i)
             {
+                var position = (float3)transform.position + random.NextFloat3(-param.wall.scale / 2, param.wall.scale / 2);
+
                 var entity = manager.CreateEntity(archetype);
-                manager.SetComponentData(entity, new Translation { Value = (float3)transform.position + random.NextFloat3(-param.wall.scale / 2, param.wall.scale / 2) });
-                manager.SetComponentData(entity, new Rotation { Value = quaternion.identity });
+                manager.SetComponentData(entity, new Translation { Value = position });
+                manager.SetComponentData(entity, new Rotation { Value = random.NextQuaternionRotation() });
                 manager.SetComponentData(entity, new NonUniformScale { Value = boidScale });
                 manager.SetComponentData(entity, new LocalToWorld { Value = float4x4.identity });
                 manager.SetComponentData(entity, new Velocity { Value = random.NextFloat3Direction() * param.speed.initial });

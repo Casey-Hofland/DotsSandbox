@@ -7,6 +7,8 @@ using Unity.Transforms;
 
 namespace Boids.DOTS.Sample1
 {
+    [DisableAutoCreation]
+    [UpdateInGroup(typeof(BoidsSystemGroup))]
     public class WallSystem : JobComponentSystem
     {
         [BurstCompile]
