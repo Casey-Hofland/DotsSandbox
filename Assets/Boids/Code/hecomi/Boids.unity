@@ -242,8 +242,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af1ffb2f2ce7bb64aafc7464e4e1ef0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boidCount: 1000
-  prefab: {fileID: -927199367670048503, guid: 8f476783fcd9cda43aafc3d11331e5ae, type: 3}
+  boidCount: 10000
+  prefab: {fileID: 3835161699725269023, guid: 26a6cf952c4dc104094f77aa06f0550b, type: 3}
   param: {fileID: 11400000, guid: b3145c510d5b8dd43b01b1cdb52ddaa4, type: 2}
 --- !u!4 &1657608785
 Transform:

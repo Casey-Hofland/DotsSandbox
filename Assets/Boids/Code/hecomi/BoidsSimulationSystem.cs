@@ -55,42 +55,46 @@ namespace Boids
             }
         }
 #else
-    [BurstCompile]
-    private struct NeighborsDetectionJob : IJobForEachWithEntity_EBCCC<BoidNeighbors, Translation, BoidVelocity, PhysicsCollider>
-    {
-        [ReadOnly] public CollisionWorld collisionWorld;
-        [ReadOnly] public float distanceThreshold;
-        [ReadOnly] public float productThreshold;
-
-        public void Execute(Entity entity, int index, DynamicBuffer<BoidNeighbors> buffer, [ReadOnly] ref Translation translation, [ReadOnly] ref BoidVelocity velocity, [ReadOnly] ref PhysicsCollider collider)
+        [BurstCompile]
+        private struct NeighborsDetectionJob : IJobForEachWithEntity_EBCCC<BoidNeighbors, Translation, BoidVelocity, PhysicsCollider>
         {
-            buffer.Clear();
+            [ReadOnly] public CollisionWorld collisionWorld;
+            [ReadOnly] public float distanceThreshold;
+            [ReadOnly] public float productThreshold;
 
-            var forward = math.normalize(velocity.Value);
+            public void Execute(Entity entity, int index, DynamicBuffer<BoidNeighbors> buffer, [ReadOnly] ref Translation translation, [ReadOnly] ref BoidVelocity velocity, [ReadOnly] ref PhysicsCollider collider)
+            {
+                buffer.Clear();
 
-            var pointDistanceInput = new PointDistanceInput()
-            {
-                Filter = collider.Value.Value.Filter
-                , MaxDistance = distanceThreshold
-                , Position = translation.Value
-            };
-            var allHits = new NativeList<DistanceHit>(Allocator.Temp);
-            if(collisionWorld.CalculateDistance(pointDistanceInput, ref allHits))
-            {
-                for(int i = 1; i < allHits.Length; ++i)
+                var forward = math.normalize(velocity.Value);
+
+                var pointDistanceInput = new PointDistanceInput()
                 {
-                    var hit = allHits[i];
-                    var to = hit.Position - translation.Value;
-                    var direction = math.normalize(to);
-                    var product = math.dot(direction, forward);
+                    Filter = collider.Value.Value.Filter
+                    , MaxDistance = distanceThreshold
+                    , Position = translation.Value
+                };
+                var allHits = new NativeList<DistanceHit>(Allocator.Temp);
+                if(collisionWorld.CalculateDistance(pointDistanceInput, ref allHits))
+                {
+                    for(int i = 0; i < allHits.Length; ++i)
+                    {
+                        var hit = allHits[i];
+                        var neighbor = collisionWorld.Bodies[hit.RigidBodyIndex].Entity;
+                        if(neighbor == entity)
+                            continue;
 
-                    if(product < productThreshold)
-                        buffer.Add(new BoidNeighbors { Value = collisionWorld.Bodies[hit.RigidBodyIndex].Entity });
+                        var to = hit.Position - translation.Value;
+                        var direction = math.normalize(to);
+                        var product = math.dot(direction, forward);
+
+                        if(product < productThreshold)
+                            buffer.Add(new BoidNeighbors { Value = neighbor });
+                    }
                 }
+                allHits.Dispose();
             }
-            allHits.Dispose();
         }
-    }
 #endif
 
         [BurstCompile]
@@ -232,14 +236,14 @@ namespace Boids
                 , allBoids = allBoids
             };
 #else
-        var buildPhysicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>();
+            var buildPhysicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>();
 
-        var neighborsDetectionJob = new NeighborsDetectionJob()
-        {
-            collisionWorld = buildPhysicsWorld.PhysicsWorld.CollisionWorld
-            , distanceThreshold = param.neighbor.distance
-            , productThreshold = math.cos(math.radians(param.neighbor.Fov))
-        };
+            var neighborsDetectionJob = new NeighborsDetectionJob()
+            {
+                collisionWorld = buildPhysicsWorld.PhysicsWorld.CollisionWorld
+                , distanceThreshold = param.neighbor.distance
+                , productThreshold = math.cos(math.radians(param.neighbor.Fov))
+            };
 #endif
 
             var wallJob = new WallJob()
@@ -276,12 +280,12 @@ namespace Boids
             inputDeps.Complete();
             allBoids.Dispose();
 #else
-        inputDeps = JobHandle.CombineDependencies(
-            buildPhysicsWorld.FinalJobHandle
-            , inputDeps
-        );
+            inputDeps = JobHandle.CombineDependencies(
+                buildPhysicsWorld.FinalJobHandle
+                , inputDeps
+            );
 
-        inputDeps = neighborsDetectionJob.Schedule(this, inputDeps);
+            inputDeps = neighborsDetectionJob.Schedule(this, inputDeps);
 #endif
 
             inputDeps = wallJob.Schedule(this, inputDeps);
