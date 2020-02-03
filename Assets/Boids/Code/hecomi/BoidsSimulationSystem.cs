@@ -29,7 +29,7 @@ namespace Boids
                 buffer.Clear();
 
                 float3 forward = math.normalize(velocity.Value);
-                var distanceThreshold = neighbor.distance;
+                var distanceThreshold = neighbor.distance * neighbor.distance;
                 var productThreshold = math.cos(math.radians(neighbor.Fov));
 
                 for(int i = 0; i < allBoids.Length; ++i)
@@ -39,10 +39,10 @@ namespace Boids
 
                     var neighbor = allBoids[i];
 
-                    float3 neighborPosition = translationFromEntity[neighbor].Value;
+                    var neighborPosition = translationFromEntity[neighbor].Value;
                     var to = neighborPosition - translation.Value;
-                    var distance = math.length(to);
-
+                    var distance = math.lengthsq(to);
+                    
                     if(distance < distanceThreshold)
                     {
                         var direction = math.normalize(to);
@@ -74,7 +74,7 @@ namespace Boids
                     , MaxDistance = distanceThreshold
                     , Position = translation.Value
                 };
-                var allHits = new NativeList<DistanceHit>(Allocator.Temp);
+                var allHits = new NativeList<DistanceHit>(8, Allocator.Temp);
                 if(collisionWorld.CalculateDistance(pointDistanceInput, ref allHits))
                 {
                     for(int i = 0; i < allHits.Length; ++i)
