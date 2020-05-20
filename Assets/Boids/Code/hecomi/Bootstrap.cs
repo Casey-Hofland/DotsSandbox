@@ -40,7 +40,8 @@ namespace Boids
 
         private void Start()
         {
-            var conversionSettings = GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, null);
+            var blobAssetStore = new BlobAssetStore();
+            var conversionSettings = GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, blobAssetStore);
             var sourceEntity = GameObjectConversionUtility.ConvertGameObjectHierarchy(prefab, conversionSettings);
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             var random = new Random((uint)Guid.NewGuid().GetHashCode() + 1);
@@ -71,6 +72,7 @@ namespace Boids
             }
 
             entityManager.DestroyEntity(sourceEntity);
+            blobAssetStore.Dispose();
         }
 
         private void OnDrawGizmos()
